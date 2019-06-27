@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: minio-deployment
+  name: minio
 spec:
   strategy:
     type: Recreate
@@ -35,7 +35,7 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: minio-service
+  name: minio
 spec:
   selector:
     app: minio
