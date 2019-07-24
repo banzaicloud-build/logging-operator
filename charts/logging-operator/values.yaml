@@ -5,8 +5,8 @@
 replicaCount: 1
 
 image:
-  repository: banzaicloud/logging-operator
-  tag: 0.2.1
+  repository: 161831738826.dkr.ecr.us-west-2.amazonaws.com/banzaicloud-build/logging-operator
+  tag: 0.2.5
   pullPolicy: IfNotPresent
 
 nameOverride: ""
