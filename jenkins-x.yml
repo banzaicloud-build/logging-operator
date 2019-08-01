@@ -19,25 +19,17 @@ pipelineConfig:
               secretKeyRef:
                 key: AWS_SECRET_ACCESS_KEY
                 name: jenkins-x-aws-auth
-          #- name: DOCKER_REGISTRY
-          #  value: http://jenkins-x-docker-registry
-          #- name: ASDF
-          #  value: 'vault:secret/test/asdf#ASDF'
-          #- name: PATH
-          #  value: "/workspace/source/go/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
         stages:
           - name: Static checks
             steps:
               - name: Workaround
                 command: |
                   set -x
-                  env
                   mkdir -p /workspace/source/go/bin
                   mkdir -p /tmp/logging-operator
                   mv /workspace/source/* /tmp/logging-operator/
                   mkdir -p /workspace/source/go/src/github.com/banzaicloud
                   mv /tmp/logging-operator /workspace/source/go/src/github.com/banzaicloud/logging-operator
-                  env
               - name: Run fmt checks
                 command: |
                   cd /workspace/source/go/src/github.com/banzaicloud/logging-operator
@@ -82,6 +74,7 @@ pipelineConfig:
                   - '--destination=161831738826.dkr.ecr.us-east-1.amazonaws.com/banzaicloud/logging-operator:local'
                   - '--context=/workspace/source/go/src/github.com/banzaicloud/logging-operator'
                   - '--cache'
+                  - '--cache-repo=jenkins-x-docker-registry.jx.svc.cluster.local:5000/logging-operator-cache'
                   - '--insecure-registry'
                   - '--insecure'
                   - '--insecure-pull'
