@@ -31,23 +31,23 @@ pipelineConfig:
                   mkdir -p /workspace/source/go/src/github.com/banzaicloud
                   mv /tmp/logging-operator /workspace/source/go/src/github.com/banzaicloud/logging-operator
               - name: Run fmt checks
+                dir: /workspace/source/go/src/github.com/banzaicloud/logging-operator
                 command: |
-                  cd /workspace/source/go/src/github.com/banzaicloud/logging-operator
                   make check-fmt
               - name: Run linter
+                dir: /workspace/source/go/src/github.com/banzaicloud/logging-operator
                 command: |
                   export PATH="$PATH:/workspace/source/go/bin"
-                  cd /workspace/source/go/src/github.com/banzaicloud/logging-operator
                   make lint
               - name: Run misspell check
+                dir: /workspace/source/go/src/github.com/banzaicloud/logging-operator
                 command: |
                   export PATH="$PATH:/workspace/source/go/bin"
-                  cd /workspace/source/go/src/github.com/banzaicloud/logging-operator
                   make check-misspell
               - name: Run ineffassign
+                dir: /workspace/source/go/src/github.com/banzaicloud/logging-operator
                 command: |
                   export PATH="$PATH:/workspace/source/go/bin"
-                  cd /workspace/source/go/src/github.com/banzaicloud/logging-operator
                   make ineffassign
           - name: E2E test
             options:
