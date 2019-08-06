@@ -20,19 +20,27 @@ pipelineConfig:
                 key: AWS_SECRET_ACCESS_KEY
                 name: jenkins-x-aws-auth
         stages:
-          - name: Static checks
+          - name: Workaround
             steps:
               - name: Workaround
+                dir: go/src/github.com/banzaicloud/logging-operator
                 command: |
                   set -x
+                  ls -lha /workspace/source/lofasz
+                  ls -lha /workspace/source/go/src/github.com/banzaicloud/logging-operator
+                  sleep 30
                   mkdir -p /workspace/source/go/bin
                   mkdir -p /tmp/logging-operator
                   mv /workspace/source/* /tmp/logging-operator/
                   mkdir -p /workspace/source/go/src/github.com/banzaicloud
                   mv /tmp/logging-operator /workspace/source/go/src/github.com/banzaicloud/logging-operator
+          - name: Static checks
+            steps:
               - name: Run fmt checks
-                dir: /workspace/source/go/src/github.com/banzaicloud/logging-operator
+                dir: go/src/github.com/banzaicloud/logging-operator
                 command: |
+                  echo '###################'
+                  pwd
                   make check-fmt
               - name: Run linter
                 dir: /workspace/source/go/src/github.com/banzaicloud/logging-operator
@@ -82,12 +90,12 @@ pipelineConfig:
                   - '--skip-tls-verify-pull'
                   #- '--verbosity=debug'
               - name: Setup minio
-                image: 'bitn/banzai'
+                image: 'bitn/banzai:latest'
                 command: |
                   mc config host add minio \
                     'http://minio.jx.svc.cluster.local:9000' \
                     'minio_access_key' \
                     'minio_secret_key'
               - name: Test
-                image: 'bitn/banzai'
+                image: 'bitn/banzai:latest'
                 command: /workspace/source/go/src/github.com/banzaicloud/logging-operator/hack/test.sh

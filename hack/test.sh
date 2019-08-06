@@ -1,8 +1,8 @@
 set -xeufo pipefail
 
 SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
-BUCKET='minio/logs'
 SHA="$(git rev-parse --short HEAD)"
+BUCKET="minio/logs-${SHA}"
 NAMESPACE="logging-operator-${SHA}"
 
 function cleanup()
@@ -14,7 +14,7 @@ function cleanup()
         kubectl delete sa logging logging-fluentd;
         kubectl delete crd fluentbits.logging.banzaicloud.com fluentds.logging.banzaicloud.com;
         kubectl delete -n "${NAMESPACE}" service "logging-operator-${SHA}";
-        mc rb  --force minio/logs-${SHA}
+        mc rb  --force "${BUCKET}"
     ) || true
 }
 trap cleanup EXIT
@@ -26,7 +26,7 @@ function main()
         'http://minio.jx.svc.cluster.local:9000' \
         'minio_access_key' \
         'minio_secret_key'
-    mc mb --region='test_region' minio/logs-${SHA}
+    mc mb --region='test_region' "${BUCKET}"
     prepare_output_config
 
     add_repo
