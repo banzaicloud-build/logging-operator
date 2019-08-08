@@ -1,0 +1,101 @@
+buildPack: none
+
+pipelineConfig:
+  pipelines:
+    pullRequest:
+      pipeline:
+        agent:
+          image: 'golang:1.11.4'
+        env:
+          - name: GOPATH
+            value: /workspace/source/go
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                key: AWS_ACCESS_KEY_ID
+                name: jenkins-x-aws-auth
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                key: AWS_SECRET_ACCESS_KEY
+                name: jenkins-x-aws-auth
+        stages:
+          - name: Workaround
+            steps:
+              - name: Workaround
+                dir: go/src/github.com/banzaicloud/logging-operator
+                command: |
+                  set -x
+                  ls -lha /workspace/source/lofasz
+                  ls -lha /workspace/source/go/src/github.com/banzaicloud/logging-operator
+                  sleep 30
+                  mkdir -p /workspace/source/go/bin
+                  mkdir -p /tmp/logging-operator
+                  mv /workspace/source/* /tmp/logging-operator/
+                  mkdir -p /workspace/source/go/src/github.com/banzaicloud
+                  mv /tmp/logging-operator /workspace/source/go/src/github.com/banzaicloud/logging-operator
+          - name: Static checks
+            steps:
+              - name: Run fmt checks
+                dir: go/src/github.com/banzaicloud/logging-operator
+                command: |
+                  echo '###################'
+                  pwd
+                  make check-fmt
+              - name: Run linter
+                dir: /workspace/source/go/src/github.com/banzaicloud/logging-operator
+                command: |
+                  export PATH="$PATH:/workspace/source/go/bin"
+                  make lint
+              - name: Run misspell check
+                dir: /workspace/source/go/src/github.com/banzaicloud/logging-operator
+                command: |
+                  export PATH="$PATH:/workspace/source/go/bin"
+                  make check-misspell
+              - name: Run ineffassign
+                dir: /workspace/source/go/src/github.com/banzaicloud/logging-operator
+                command: |
+                  export PATH="$PATH:/workspace/source/go/bin"
+                  make ineffassign
+          - name: E2E test
+            options:
+              containerOptions:
+                volumeMounts:
+                  - name: aws-secret
+                    mountPath: /root/.aws/
+                  - name: docker-config
+                    mountPath: /kaniko/.docker/
+              volumes:
+                - name: aws-secret
+                  secret:
+                    secretName: jenkins-x-aws-secret
+                - name: docker-config
+                  configMap:
+                    name: ecr-docker-config
+            steps:
+              - name: Build image
+                image: 'gcr.io/kaniko-project/executor:latest'
+                command: /kaniko/executor
+                args:
+                  - '--dockerfile=/workspace/source/go/src/github.com/banzaicloud/logging-operator/Dockerfile'
+                  #- '--destination=jenkins-x-docker-registry.jx.svc.cluster.local:5000/logging-operator:local'
+                  - '--destination=161831738826.dkr.ecr.us-east-1.amazonaws.com/banzaicloud/logging-operator:local'
+                  - '--context=/workspace/source/go/src/github.com/banzaicloud/logging-operator'
+                  - '--cache'
+                  - '--cache-repo=jenkins-x-docker-registry.jx.svc.cluster.local:5000/logging-operator-cache'
+                  - '--insecure-registry'
+                  - '--insecure'
+                  - '--insecure-pull'
+                  - '--skip-tls-verify'
+                  - '--skip-tls-verify-pull'
+                  #- '--verbosity=debug'
+              - name: Setup minio
+                image: 'bitn/banzai:latest'
+                command: |
+                  mc config host add minio \
+                    'http://minio.jx.svc.cluster.local:9000' \
+                    'minio_access_key' \
+                    'minio_secret_key'
+              - name: Test
+                image: 'bitn/banzai:latest'
+                command: /workspace/source/go/src/github.com/banzaicloud/logging-operator/hack/test.sh
